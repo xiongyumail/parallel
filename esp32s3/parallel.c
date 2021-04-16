@@ -64,7 +64,7 @@ static void parallel_config(void)
     LCD_CAM.lcd_clock.lcd_clkm_div_b = 0;
     LCD_CAM.lcd_clock.lcd_clkm_div_a = 10;
     LCD_CAM.lcd_clock.lcd_clkm_div_num = 2;
-    LCD_CAM.lcd_clock.lcd_clkcnt_n = p_parallel_config->clk_div;
+    LCD_CAM.lcd_clock.lcd_clkcnt_n = p_parallel_config->clk_div * 2 - 1;
     LCD_CAM.lcd_clock.lcd_clk_equ_sysclk = 0;
     LCD_CAM.lcd_clock.lcd_ck_idle_edge = 1; // After lcd_clk_equ_sysclk is set to 1, this bit has no effect
     LCD_CAM.lcd_clock.lcd_ck_out_edge = 0; // After lcd_clk_equ_sysclk is set to 1, this bit has no effect
