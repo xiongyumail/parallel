@@ -145,7 +145,7 @@ static void parallel_interface_init()
 static inline void IRAM_ATTR dma_start(void)
 {
     busy_flag = 1;
-    LCD_CAM.lcd_user.lcd_start = 0;
+    while (LCD_CAM.lcd_user.lcd_start);
     LCD_CAM.lcd_user.lcd_reset = 1;
     LCD_CAM.lcd_user.lcd_reset = 0;
     LCD_CAM.lcd_misc.lcd_afifo_reset = 1;

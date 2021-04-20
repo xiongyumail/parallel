@@ -115,6 +115,7 @@ static void parallel_interface_init()
 static inline void IRAM_ATTR dma_start(void)
 {
     busy_flag = 1;
+    while (!I2S0.state.tx_idle); // Lower data frequency will cause the dma interrupt to arrive early, and the line has not yet been sent
     I2S0.conf.tx_start = 0;
     I2S0.fifo_conf.dscr_en = 0;
     I2S0.conf.tx_reset = 1;
@@ -123,7 +124,7 @@ static inline void IRAM_ATTR dma_start(void)
     I2S0.conf.tx_fifo_reset = 0;
 	I2S0.fifo_conf.dscr_en = 1;
 	I2S0.out_link.start = 1;
-	ets_delay_us(1);
+	esp_rom_delay_us(1);
 	I2S0.conf.tx_start = 1;
 }
 
