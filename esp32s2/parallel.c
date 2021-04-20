@@ -90,6 +90,7 @@ static void parallel_set_pin(void)
 static void IRAM_ATTR parallel_isr(void *arg)
 {
    if(I2S0.int_st.out_total_eof) {
+       while (!I2S0.state.tx_idle); // Lower data frequency will cause the dma interrupt to arrive early, and the line has not yet been sent
        busy_flag = 0;
    }
    I2S0.int_clr.val = ~0;
