@@ -1,5 +1,7 @@
 # parallel
 
+[![CI](https://github.com/xiongyumail/parallel/actions/workflows/main.yml/badge.svg)](https://github.com/xiongyumail/parallel/actions/workflows/main.yml)
+
 parallel driver for esp32s2, esp32s3
 
 1. Add parallel to your project components
