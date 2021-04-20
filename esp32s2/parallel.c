@@ -112,7 +112,7 @@ static void parallel_interface_init()
     I2S0.int_ena.out_total_eof = 1;
 }
 
-static inline void IRAM_ATTR dma_start(void)
+static inline void IRAM_ATTR dma_start(uint32_t addr)
 {
     busy_flag = 1;
     while (!I2S0.state.tx_idle); // Lower data frequency will cause the dma interrupt to arrive early, and the line has not yet been sent
@@ -123,6 +123,7 @@ static inline void IRAM_ATTR dma_start(void)
     I2S0.conf.tx_fifo_reset = 1;
     I2S0.conf.tx_fifo_reset = 0;
 	I2S0.fifo_conf.dscr_en = 1;
+    I2S0.out_link.addr = addr;
 	I2S0.out_link.start = 1;
 	esp_rom_delay_us(1);
 	I2S0.conf.tx_start = 1;
@@ -148,8 +149,7 @@ static inline void IRAM_ATTR parallel_dma_write(uint8_t *buf, size_t length)
     }
     __dma[cnt-1].eof = 1;
     __dma[cnt-1].empty = NULL;
-    I2S0.out_link.addr = ((uint32_t)&__dma[0]) & 0xfffff;
-    dma_start();
+    dma_start(((uint32_t)&__dma[0]) & 0xfffff);
 }
 
 void IRAM_ATTR parallel_write_data(uint8_t *data, size_t len)

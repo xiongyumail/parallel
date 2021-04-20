@@ -34,6 +34,7 @@ static uint8_t *parallel_buffer = NULL;
 static volatile int busy_flag = 0;
 
 #define LCD_CAM_INTR_SOURCE               (((INTERRUPT_CORE0_LCD_CAM_INT_MAP_REG - DR_REG_INTERRUPT_CORE0_BASE) / 4))
+#define LCD_CAM_DMA_NUM                   (4)
 
 static void parallel_config(void)
 {
@@ -51,12 +52,10 @@ static void parallel_config(void)
         REG_CLR_BIT(SYSTEM_PERIP_RST_EN1_REG, SYSTEM_DMA_RST);
     }
 
-    GDMA.conf0[0].val = 0;
-    GDMA.conf0[0].mem_trans_en = 0;
-    GDMA.conf1[0].val = 0;
-    GDMA.conf1[0].check_owner = 0;
-    GDMA.int_clr[0].val = ~0;
-    GDMA.int_ena[0].val = 0;
+    GDMA.conf0[LCD_CAM_DMA_NUM].val = 0;
+    GDMA.conf1[LCD_CAM_DMA_NUM].val = 0;
+    GDMA.int_clr[LCD_CAM_DMA_NUM].val = ~0;
+    GDMA.int_ena[LCD_CAM_DMA_NUM].val = 0;
 
     LCD_CAM.lcd_clock.val = 0;
     LCD_CAM.lcd_clock.clk_en = 1;
@@ -94,12 +93,12 @@ static void parallel_config(void)
     LCD_CAM.lcd_cmd_val = 0;	// write command
     LCD_CAM.lcd_user.lcd_update = 1;
 
-    GDMA.conf0[0].out_rst = 1;
-    GDMA.conf0[0].out_rst = 0;
-    GDMA.conf0[0].outdscr_burst_en = 1;
-    GDMA.conf0[0].out_data_burst_en = 1;
-    GDMA.peri_sel[0].peri_out_sel = 5;
-    GDMA.pri[0].tx_pri = 1;
+    GDMA.conf0[LCD_CAM_DMA_NUM].out_rst = 1;
+    GDMA.conf0[LCD_CAM_DMA_NUM].out_rst = 0;
+    GDMA.conf0[LCD_CAM_DMA_NUM].outdscr_burst_en = 1;
+    GDMA.conf0[LCD_CAM_DMA_NUM].out_data_burst_en = 1;
+    GDMA.peri_sel[LCD_CAM_DMA_NUM].peri_out_sel = 5;
+    GDMA.pri[LCD_CAM_DMA_NUM].tx_pri = 1;
 }
 
 static void parallel_set_pin(void)
@@ -142,7 +141,7 @@ static void parallel_interface_init()
     LCD_CAM.lc_dma_int_ena.lcd_trans_done = 1;
 }
 
-static inline void IRAM_ATTR dma_start(void)
+static inline void IRAM_ATTR dma_start(uint32_t addr)
 {
     busy_flag = 1;
     while (LCD_CAM.lcd_user.lcd_start);
@@ -150,7 +149,19 @@ static inline void IRAM_ATTR dma_start(void)
     LCD_CAM.lcd_user.lcd_reset = 0;
     LCD_CAM.lcd_misc.lcd_afifo_reset = 1;
     LCD_CAM.lcd_misc.lcd_afifo_reset = 0;
-    GDMA.out_link[0].start = 1;
+    while (GDMA.out_link[LCD_CAM_DMA_NUM].start);
+    GDMA.conf0[LCD_CAM_DMA_NUM].val = 0;
+    GDMA.conf1[LCD_CAM_DMA_NUM].val = 0;
+    GDMA.int_clr[LCD_CAM_DMA_NUM].val = ~0;
+    GDMA.int_ena[LCD_CAM_DMA_NUM].val = 0;
+    GDMA.conf0[LCD_CAM_DMA_NUM].out_rst = 1;
+    GDMA.conf0[LCD_CAM_DMA_NUM].out_rst = 0;
+    GDMA.conf0[LCD_CAM_DMA_NUM].outdscr_burst_en = 1;
+    GDMA.conf0[LCD_CAM_DMA_NUM].out_data_burst_en = 1;
+    GDMA.peri_sel[LCD_CAM_DMA_NUM].peri_out_sel = 5;
+    GDMA.pri[LCD_CAM_DMA_NUM].tx_pri = 1;
+    GDMA.out_link[LCD_CAM_DMA_NUM].addr = addr;
+    GDMA.out_link[LCD_CAM_DMA_NUM].start = 1;
     esp_rom_delay_us(1);
     LCD_CAM.lcd_user.lcd_update = 1;
     LCD_CAM.lcd_user.lcd_start = 1;
@@ -176,11 +187,7 @@ static inline void IRAM_ATTR parallel_dma_write(uint8_t *buf, size_t length)
     }
     __dma[cnt-1].eof = 1;
     __dma[cnt-1].empty = NULL;
-
-    GDMA.conf0[0].out_rst = 1;
-    GDMA.conf0[0].out_rst = 0;
-    GDMA.out_link[0].addr = ((uint32_t)&__dma[0]);
-    dma_start();
+    dma_start((uint32_t)&__dma[0]);
 }
 
 void IRAM_ATTR parallel_write_data(uint8_t *data, size_t len)
